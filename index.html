@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="http://www.verovio.org/javascript/latest/verovio-toolkit.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.13.1/lodash.min.js"></script>
+<style>
+svg {
+  border: 1px solid #000;
+}
+#output {
+}
+</style>
+</head>
+<body>
+<div id="output"></div>
+</body>
+<script type="text/javascript">
+
+var notes = [
+  {note: 'C', idx: 0},
+  {sharpNote: 'Cx', flatNote: 'Db', idx: 1},
+  {note: 'D', idx: 2},
+  {sharpNote: 'Dx', flatNote: 'Eb', idx: 3},
+  {note: 'E', idx: 4},
+  {note: 'F', idx: 5},
+  {sharpNote: 'Fx', flatNote: 'Gb', idx: 6},
+  {note: 'G', idx: 7},
+  {sharpNote: 'Gx', flatNote: 'Ab', idx: 8},
+  {note: 'A', idx: 9},
+  {sharpNote: 'Ax', flatNote: 'Bb', idx: 10},
+  {note: 'B', idx: 11},
+];
+var upOctave = "'";
+var downOcatve = ",";
+var midOctave = 4;
+
+var options = {
+  pageHeight:2000,
+  pageWidth: 1800,
+  ignoreLayout: 1,
+  scale:50
+}
+
+var scales = {
+  'major': [0,2,4,5,7,9,11,12],
+  'natural-minor': [0,2,3,5,7,8,10,12],
+  'harmonic-minor': [0,2,3,5,7,8,11,12],
+  // 'melodic-minor': [0,2,3,5,7,8,11,12], // TODO, separate ascending, descending
+}
+
+var sharpScales = [
+  0,7,2,9,4,11,6,1,8
+  //'C','G','D','A','E','B','Fx','Cx','Gx']
+]
+var flatScales = [
+  0,7,10,3,8,1,6,11,4
+  //'C','F','Bb','Eb','Ab','Db','Gb','Cb','Fb']
+]
+
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min)) + min;
+}
+function indexToOctaveMark(idx) {
+   var dir = Math.floor(idx / 12);
+   var char = dir < midOctave ? downOcatve : upOctave;
+   var prefix = '';
+   for(var i=0; i<Math.abs(dir-midOctave); i++) {
+     prefix += char;
+   }
+   return prefix;
+}
+function indexToNote(duration, idx, sharpOrFlat) {
+  var note = notes[idx % 12];
+  var prefix = indexToOctaveMark(idx);
+  
+  var accidental = '';
+  var noteName = note.note;
+  if(!note.note) {
+    if(sharpOrFlat) {
+      noteName = note.sharpNote[0];
+      accidental = note.sharpNote[1];
+    } else {
+      noteName = note.flatNote[0];
+      accidental = note.flatNote[1];
+    }
+  }
+  console.assert(noteName);
+  return prefix + accidental + (duration || '') + noteName;
+}
+
+var notesInDScale = _(scales['major']).map(x => (x+(midOctave*12)+3)).value();
+var notatedDScale = _(notesInDScale).map(x => indexToNote(4, x, true)).value();
+
+function generateRandom4s(numMsrs, notes, preferSharps) {
+  var domain = _.size(notes);
+  var arr = _(_.range(numMsrs*4))
+    .map(x => notes[getRandomInt(0, domain)])
+    .map(x => indexToNote(4, x, preferSharps))
+    .value();
+
+  var dataStr = '';
+  for(var i=0; i<_.size(arr); i++) {
+    if(i > 0 && ((i % 4) == 0)) {
+      dataStr += '/';
+    }
+    dataStr += arr[i];
+  }
+  return dataStr;
+}
+
+
+function render() {
+  /* The Plain and Easy code to be rendered */
+  //var data = "@clef:G-2\n\
+  //@keysig:xFCGD\n\
+  //@timesig:3/8\n\
+  //@data:'6B/{8B+(6B''E'B})({AFD})/{6.E3G},8B-/({6'EGF})({FAG})({GEB})/";
+  var data = "@clef:G-2\n\
+  @keysig:bBEA\n\
+  @timesig:4/4\n\
+  @data:"+generateRandom4s(16, notesInDScale, false);
+  console.log(data);
+
+  /* Create the Verovio toolkit instance */
+  var vrvToolkit = new verovio.toolkit();
+  vrvToolkit.setOptions(JSON.stringify(options));
+  /* Render the data and insert it as content of the #output div */
+  document.getElementById("output").innerHTML = vrvToolkit.renderData( 
+                                                                      data, 
+                                                                      JSON.stringify({ inputFormat: 'pae' }) 
+                                                                     );
+}
+render();
+</script>
+</html>
