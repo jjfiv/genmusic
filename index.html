@@ -5,25 +5,7 @@
 <script src="http://www.verovio.org/javascript/latest/verovio-toolkit.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.13.1/lodash.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/history/3.0.0-2/History.js"></script>
-<style>
-label {
-  display: block;
-}
-svg {
-  border: 1px solid #000;
-}
-#output {
-}
-</style>
-</head>
-<body>
-<label>Select Key Signature:<select id="keySignature"></select></label>
-<label>Number of Measures: <input id="numMeasures" type="text" value="16" /></label>
-<input type="button" value="Generate!" onClick="clickForm()" />
-<div id="output"></div>
-</body>
-<script type="text/javascript">
-
+<script>
 var hist = History.useQueries(History.createHistory)();
 
 var notes = [
@@ -76,31 +58,6 @@ var flatKeySig = [
  "", "bB", "bBE", "bBEA", "bBEAD", "bBEADG", "bBEADGC", "bBEADGCF"
   ]
 
-
-var select = document.getElementById('keySignature')
-_(sharpScales).forEach((offset, idx) => {
-  var scaleNote = notes[offset];
-  var name = scaleNote.note;
-  if(!name) {
-    name = notes[offset-1].note+"#";
-  }
-  var opt = document.createElement("option");
-  opt.text = name;
-  opt.setAttribute("key", "sharp"+idx);
-  select.appendChild(opt);
-});
-_(flatScales).forEach((offset, idx) => {
-  var scaleNote = notes[offset];
-  var name = scaleNote.note;
-  if(!name) {
-    name = notes[offset+1].note+"b";
-  }
-  var opt = document.createElement("option");
-  opt.text = name;
-  opt.setAttribute("key", "flat"+idx);
-  select.appendChild(opt);
-});
-
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min)) + min;
 }
@@ -149,6 +106,53 @@ function generateRandom4s(numMsrs, notes, preferSharps) {
   }
   return dataStr;
 }
+
+
+
+</script>
+<style>
+label {
+  display: block;
+}
+svg {
+  border: 1px solid #000;
+}
+#output {
+}
+</style>
+</head>
+<body>
+<label>Select Key Signature:<select id="keySignature"></select></label>
+<label>Number of Measures: <input id="numMeasures" type="text" value="16" /></label>
+<input type="button" value="Generate!" onClick="clickForm()" />
+<div id="output"></div>
+</body>
+<script type="text/javascript">
+
+// build select box:
+var select = document.getElementById('keySignature')
+_(sharpScales).forEach((offset, idx) => {
+  var scaleNote = notes[offset];
+  var name = scaleNote.note;
+  if(!name) {
+    name = notes[offset-1].note+"#";
+  }
+  var opt = document.createElement("option");
+  opt.text = name;
+  opt.setAttribute("key", "sharp"+idx);
+  select.appendChild(opt);
+});
+_(flatScales).forEach((offset, idx) => {
+  var scaleNote = notes[offset];
+  var name = scaleNote.note;
+  if(!name) {
+    name = notes[offset+1].note+"b";
+  }
+  var opt = document.createElement("option");
+  opt.text = name;
+  opt.setAttribute("key", "flat"+idx);
+  select.appendChild(opt);
+});
 
 function clickForm() {
   var select = document.getElementById("keySignature");
