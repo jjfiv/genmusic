@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <script src="http://www.verovio.org/javascript/latest/verovio-toolkit.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.13.1/lodash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/history/3.0.0-2/History.js"></script>
 <style>
 label {
   display: block;
@@ -23,6 +24,7 @@ svg {
 </body>
 <script type="text/javascript">
 
+var hist = History.useQueries(History.createHistory)();
 
 var notes = [
   {note: 'C', idx: 0},
@@ -170,28 +172,65 @@ function clickForm() {
     throw new Error("Bad select!");
   }
 
-  console.log({key, numMeasures, keySignature, keyOffset, sharpOrFlat});
+  var state = { numMeasures, keySignature, keyOffset, sharpOrFlat};
+  hist.push({pathName: "/", query: state});
+  console.log(state);
+}
+
+function render(state) {
+  var numMeasures = state.numMeasures;
+  var keyOffset = state.keyOffset;
+  var keySignature = state.keySignature;
+  var sharpOrFlat = state.sharpOrFlat;
+  console.log("render", state);
   
   var notesScale = _(scales['major']).map(x => (x+(midOctave*12)+keyOffset)).value();
-  /* The Plain and Easy code to be rendered */
-  //var data = "@clef:G-2\n\
-  //@keysig:xFCGD\n\
-  //@timesig:3/8\n\
-  //@data:'6B/{8B+(6B''E'B})({AFD})/{6.E3G},8B-/({6'EGF})({FAG})({GEB})/";
+  var data = "@clef:G-2\n\
+  @keysig:"+keySignature+"\n\
+  @timesig:4/4\n\
+  @data:"+generateRandom4s(numMeasures, notesScale, sharpOrFlat);
+  console.log("render", data);
+
+  // Create the Verovio toolkit instance
+  var vrvToolkit = new verovio.toolkit();
+  vrvToolkit.setOptions(JSON.stringify(options));
+  // Render the data and insert it as content of the #output div
+  document.getElementById("output").innerHTML = vrvToolkit.renderData(
+    data, 
+    JSON.stringify({ inputFormat: 'pae' }) 
+  );
+}
+
+hist.listen(function(loc) {
+  console.log("history", loc);
+
+  var state = {
+    numMeasures: parseInt(loc.query.numMeasures),
+    keyOffset: parseInt(loc.query.keyOffset),
+    keySignature: loc.query.keySignature,
+    sharpOrFlat: loc.query.sharpOrFlat === 'true'
+  }
+  render(state);
+
+
+  /*
+  var notesScale = _(scales['major']).map(x => (x+(midOctave*12)+keyOffset)).value();
   var data = "@clef:G-2\n\
   @keysig:"+keySignature+"\n\
   @timesig:4/4\n\
   @data:"+generateRandom4s(numMeasures, notesScale, sharpOrFlat);
   console.log(data);
 
-  /* Create the Verovio toolkit instance */
+  // Create the Verovio toolkit instance
   var vrvToolkit = new verovio.toolkit();
   vrvToolkit.setOptions(JSON.stringify(options));
-  /* Render the data and insert it as content of the #output div */
+  // Render the data and insert it as content of the #output div
   document.getElementById("output").innerHTML = vrvToolkit.renderData(
     data, 
     JSON.stringify({ inputFormat: 'pae' }) 
   );
-}
+  */
+});
+
 </script>
 </html>
