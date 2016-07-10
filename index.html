@@ -5,6 +5,9 @@
 <script src="http://www.verovio.org/javascript/latest/verovio-toolkit.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.13.1/lodash.min.js"></script>
 <style>
+label {
+  display: block;
+}
 svg {
   border: 1px solid #000;
 }
@@ -13,9 +16,13 @@ svg {
 </style>
 </head>
 <body>
+<label>Select Key Signature:<select id="keySignature"></select></label>
+<label>Number of Measures: <input id="numMeasures" type="text" value="16" /></label>
+<input type="button" value="Generate!" onClick="clickForm()" />
 <div id="output"></div>
 </body>
 <script type="text/javascript">
+
 
 var notes = [
   {note: 'C', idx: 0},
@@ -42,6 +49,7 @@ var options = {
   scale:50
 }
 
+
 var scales = {
   'major': [0,2,4,5,7,9,11,12],
   'natural-minor': [0,2,3,5,7,8,10,12],
@@ -49,14 +57,47 @@ var scales = {
   // 'melodic-minor': [0,2,3,5,7,8,11,12], // TODO, separate ascending, descending
 }
 
+// TODO, support G# and Fb
 var sharpScales = [
-  0,7,2,9,4,11,6,1,8
+  0,7,2,9,4,11,6,1
   //'C','G','D','A','E','B','Fx','Cx','Gx']
 ]
 var flatScales = [
-  0,7,10,3,8,1,6,11,4
-  //'C','F','Bb','Eb','Ab','Db','Gb','Cb','Fb']
+  0,5,10,3,8,1,6,11
+  //'C','F','Bb','Eb','Ab','Db','Gb','Cb']
 ]
+
+var sharpKeySig = [
+ "", "#F", "#FC", "#FCG", "#FCGD", "#FCGDA", "#FCGDAE", "#FCGDAEB"
+  ]
+var flatKeySig = [
+ "", "bB", "bBE", "bBEA", "bBEAD", "bBEADG", "bBEADGC", "bBEADGCF"
+  ]
+
+
+var select = document.getElementById('keySignature')
+_(sharpScales).forEach((offset, idx) => {
+  var scaleNote = notes[offset];
+  var name = scaleNote.note;
+  if(!name) {
+    name = notes[offset-1].note+"#";
+  }
+  var opt = document.createElement("option");
+  opt.text = name;
+  opt.setAttribute("key", "sharp"+idx);
+  select.appendChild(opt);
+});
+_(flatScales).forEach((offset, idx) => {
+  var scaleNote = notes[offset];
+  var name = scaleNote.note;
+  if(!name) {
+    name = notes[offset+1].note+"b";
+  }
+  var opt = document.createElement("option");
+  opt.text = name;
+  opt.setAttribute("key", "flat"+idx);
+  select.appendChild(opt);
+});
 
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min)) + min;
@@ -89,8 +130,6 @@ function indexToNote(duration, idx, sharpOrFlat) {
   return prefix + accidental + (duration || '') + noteName;
 }
 
-var notesInDScale = _(scales['major']).map(x => (x+(midOctave*12)+3)).value();
-var notatedDScale = _(notesInDScale).map(x => indexToNote(4, x, true)).value();
 
 function generateRandom4s(numMsrs, notes, preferSharps) {
   var domain = _.size(notes);
@@ -109,28 +148,50 @@ function generateRandom4s(numMsrs, notes, preferSharps) {
   return dataStr;
 }
 
+function clickForm() {
+  var select = document.getElementById("keySignature");
+  var key = _(select.selectedOptions).map(x => x.getAttribute("key")).value()[0] || "C";
+  var numMeasures = parseInt(document.getElementById("numMeasures").value || "4");
 
-function render() {
+  var sharpOrFlat = null;
+  var keyOffset = 0;
+  var keySignature = "";
+  if(key.startsWith("sharp")) {
+    var idx = parseInt(key.substr(5));
+    sharpOrFlat = true;
+    keyOffset = sharpScales[idx];
+    keySignature = sharpKeySig[idx];
+  } else if(key.startsWith("flat")) {
+    var idx = parseInt(key.substr(4));
+    sharpOrFlat = false;
+    keyOffset = flatScales[idx];
+    keySignature = flatKeySig[idx];
+  } else {
+    throw new Error("Bad select!");
+  }
+
+  console.log({key, numMeasures, keySignature, keyOffset, sharpOrFlat});
+  
+  var notesScale = _(scales['major']).map(x => (x+(midOctave*12)+keyOffset)).value();
   /* The Plain and Easy code to be rendered */
   //var data = "@clef:G-2\n\
   //@keysig:xFCGD\n\
   //@timesig:3/8\n\
   //@data:'6B/{8B+(6B''E'B})({AFD})/{6.E3G},8B-/({6'EGF})({FAG})({GEB})/";
   var data = "@clef:G-2\n\
-  @keysig:bBEA\n\
+  @keysig:"+keySignature+"\n\
   @timesig:4/4\n\
-  @data:"+generateRandom4s(16, notesInDScale, false);
+  @data:"+generateRandom4s(numMeasures, notesScale, sharpOrFlat);
   console.log(data);
 
   /* Create the Verovio toolkit instance */
   var vrvToolkit = new verovio.toolkit();
   vrvToolkit.setOptions(JSON.stringify(options));
   /* Render the data and insert it as content of the #output div */
-  document.getElementById("output").innerHTML = vrvToolkit.renderData( 
-                                                                      data, 
-                                                                      JSON.stringify({ inputFormat: 'pae' }) 
-                                                                     );
+  document.getElementById("output").innerHTML = vrvToolkit.renderData(
+    data, 
+    JSON.stringify({ inputFormat: 'pae' }) 
+  );
 }
-render();
 </script>
 </html>
